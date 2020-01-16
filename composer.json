@@ -1,0 +1,19 @@
+{
+    "name": "lajosbencz/stream-parse-sql",
+    "description": "PHP library to parse large SQL files command-by-command",
+    "type": "library",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Lajos Bencz",
+            "email": "lazos@lazos.me"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "LajosBencz\\StreamParseSql\\": "src/LajosBencz/StreamParseSql"
+        }
+    }
+}
