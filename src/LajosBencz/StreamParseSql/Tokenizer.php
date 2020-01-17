@@ -4,84 +4,130 @@
 namespace LajosBencz\StreamParseSql;
 
 
+use Generator;
+
 /**
  * @see https://github.com/martynshutt/php-tokenizer/blob/master/tokenizer.php
- * @property-read array tokens
- * @property-read string last_error
  */
 class Tokenizer
 {
-    private $_patterns = [];
-    private $_length = 0;
-    private $_tokens = [];
-    private $_delimiter = '';
-    private $_last_error = '';
+    /** @var TokenPattern[] */
+    protected $_patterns = [];
 
-    public function __construct($delimiter = "#")
+    /** @var string */
+    protected $_buffer = '';
+
+    /** @var int */
+    protected $_offset = 0;
+
+    public function __construct()
     {
-        $this->_delimiter = $delimiter;
+        $this->pushPattern(new TokenPattern("STRING_", <<<'PATTERN'
+^("|')(\\?.)*?(?<!\1)$
+PATTERN));
+        $this->pushPattern(new TokenPattern("COMMENT_SINGLE_", <<<'PATTERN'
+^\-\-\s[^\r\n]*$
+PATTERN));
+        $this->pushPattern(new TokenPattern("COMMENT_MULTI_", <<<'PATTERN'
+^\/\*[\s\S]+(?<!\*\/)$
+PATTERN));
+
+        $this->pushPattern(new TokenPattern("COMMENT_SINGLE", <<<'PATTERN'
+^--\s(.*)(\r)?\n
+PATTERN));
+        $this->pushPattern(new TokenPattern("COMMENT_MULTI", <<<'PATTERN'
+^\/\*(\r|\n|.)*\*\/
+PATTERN));
+
+        $this->pushPattern(new TokenPattern("STRING", <<<'PATTERN'
+^("|')(\\?.)*?\1
+PATTERN));
+
+        $this->pushPattern(new TokenPattern('DELIMITER', '^[;]'));
+        $this->pushPattern(new TokenPattern("BRACKET_OPEN", "^\("));
+        $this->pushPattern(new TokenPattern("BRACKET_CLOSE", "^\)"));
+        $this->pushPattern(new TokenPattern('IDENTIFIER', '^[a-zA-Z_][a-zA-Z0-9_]*'));
+        $this->pushPattern(new TokenPattern('WHITESPACE', '^[\s]'));
+        $this->pushPattern(new TokenPattern('EXPRESSION', '^[\S]+'));
+        $this->pushPattern(new TokenPattern("NEWLINE", '^(\r)?\n'));
+        $this->pushPattern(new TokenPattern('ANY', '^.'));
+    }
+
+    public function clearPatterns(): void
+    {
+        $this->_patterns = [];
+    }
+
+    public function pushPattern(TokenPattern $pattern): self
+    {
+        $this->_patterns[] = $pattern;
+        return $this;
     }
 
     /**
-     * Add a regular expression to the Tokenizer
-     *
-     * @param string $name name of the token
-     * @param string $pattern the regular expression to match
+     * @return TokenPattern[]
      */
-    public function add($name, $pattern)
+    public function getPatterns(): array
     {
-        $this->_patterns[$this->_length]['name'] = $name;
-        $this->_patterns[$this->_length]['regex'] = $pattern;
-        $this->_length++;
+        return $this->_patterns;
+    }
+
+    public function reset(): void
+    {
+        $this->_buffer = '';
+        $this->_offset = 0;
     }
 
     /**
-     * Tokenizes a reference to an input string,
-     * removing matches from the beginning of the string
-     *
-     * @param string &$input the input string to tokenize
-     *
-     * @return boolean|string returns the matched token on success, boolean false on failure
+     * @param $chunk
+     * @return Token[]|Generator
+     * @throws Exception\ParseException
      */
-    public function tokenize(&$input)
+    public function append($chunk): Generator
     {
-        for ($i = 0; $i < $this->_length; $i++) {
-            if (@preg_match($this->_patterns[$i]['regex'], $input, $matches)) {
-
-
-                $this->_tokens[] = [
-                    'name' => $this->_patterns[$i]['name'],
-                    'token' => $matches[0],
-                    'offset' => $i,
-                ];
-
-                //remove last found token from the $input string
-                //we use preg_quote to escape any regular expression characters in the matched input
-                $input = trim(preg_replace($this->_delimiter . "^" . preg_quote($matches[0], $this->_delimiter) . $this->_delimiter, "", $input));
-
-                return $matches[0];
-            } elseif (preg_match($this->_patterns[$i]['regex'], $input, $matches) === false) {
-                $this->_last_error = 'Error occured at $_patterns[' . $i . ']';
-                return false;
+        $input = $this->_buffer . $chunk;
+        $offset = 0;
+        $tokens = [];
+        while (strlen($input) > 0) {
+            $hit = false;
+            foreach ($this->_patterns as $pattern) {
+                if (@preg_match($pattern->regex, $input, $matches, PREG_OFFSET_CAPTURE)) {
+                    $hit = true;
+                    $matchText = $matches[0][0];
+                    $matchOffset = $matches[0][1];
+                    $matchLength = strlen($matchText);
+                    $offset += $matchLength;
+                    $this->_offset += $matchLength;
+                    $token = new Token($pattern, $matchText, $this->_offset + $offset + $matchOffset, $matchLength);
+                    switch ($token->pattern->name) {
+                        case 'STRING_':
+                        case 'COMMENT_SINGLE_':
+                        case 'COMMENT_MULTI_':
+                            $this->_buffer = $matchText;
+                            return;
+                        default:
+                            if ($token->pattern->name === 'DELIMITER') {
+                                foreach ($tokens as $t) {
+                                    yield $t;
+                                }
+                                yield $token;
+                                $tokens = [];
+                            }
+                            $input = substr($input, $matchLength);
+                            $tokens[] = $token;
+                            break;
+                    }
+                    break;
+                }
+            }
+            if (!$hit) {
+                throw new Exception\ParseException($input);
             }
         }
-        return false;
-    }
-
-    public function __get($item)
-    {
-        switch ($item) {
-            case 'tokens':
-                return $this->_tokens;
-            case 'last_error':
-                return $this->_last_error;
+        foreach ($tokens as $t) {
+            yield $t;
         }
-        return null;
+        $this->_offset += $offset;
     }
 
-    public function reset()
-    {
-        $this->_tokens = [];
-        $this->_last_error = '';
-    }
 }

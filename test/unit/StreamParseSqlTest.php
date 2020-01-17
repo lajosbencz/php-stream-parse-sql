@@ -20,10 +20,13 @@ class StreamParseSqlTest extends TestCase
      */
     public function testStreamParseSql($filePath)
     {
+        $parsed = '';
         $parser = new StreamParseSql($filePath);
         $this->assertEquals(realpath($filePath), $parser->getFilePath());
         foreacH($parser->parse() as $line) {
             $this->assertNotEmpty($line);
+            $parsed.= $line;
         }
+        file_put_contents($filePath.'.check.sql', $parsed);
     }
 }

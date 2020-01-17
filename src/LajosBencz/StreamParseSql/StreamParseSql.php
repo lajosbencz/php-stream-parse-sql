@@ -8,17 +8,24 @@ use Generator;
 
 class StreamParseSql
 {
-    use DelimiterAwareTrait;
+    const DEFAULT_DELIMITER = ';';
 
-    protected $_filePath;
+    const DEFAULT_CHUNK_SIZE = 4096;
 
-    public function __construct(string $filePath, string $delimiter=DEFAULT_DELIMITER)
+    protected $_filePath = '';
+
+    protected $_delimiter = self::DEFAULT_DELIMITER;
+
+    protected $_chunkSize = self::DEFAULT_CHUNK_SIZE;
+
+    public function __construct(string $filePath, string $delimiter = self::DEFAULT_DELIMITER, int $chunkSize = self::DEFAULT_CHUNK_SIZE)
     {
         $this->setDelimiter($delimiter);
-        if(!is_readable($filePath)) {
+        if (!is_readable($filePath)) {
             throw new Exception\FileReadException($filePath);
         }
         $this->_filePath = realpath($filePath);
+        $this->_chunkSize = $chunkSize;
     }
 
     public function getFilePath(): string
@@ -26,25 +33,49 @@ class StreamParseSql
         return $this->_filePath;
     }
 
+    public function setDelimiter(string $delimiter = self::DEFAULT_DELIMITER): void
+    {
+        $this->_delimiter = $delimiter;
+    }
+
+    public function getDelimiter(): string
+    {
+        return $this->_delimiter;
+    }
+
     public function parse(): Generator
     {
+        $tokenizer = new Tokenizer;
+        $tokens = [];
         $filePath = $this->getFilePath();
         $fh = fopen($filePath, 'r');
-        if(!is_resource($fh)) {
+        if (!is_resource($fh)) {
             throw new Exception\FileReadException($filePath);
         }
-        if(!flock($fh, LOCK_SH)) {
+        if (!flock($fh, LOCK_SH)) {
             throw new Exception\FileLockException($filePath);
         }
-        $buffer = new Buffer;
-        while(($line = fgets($fh)) && !feof($fh)) {
-            foreach($buffer->append($line) as $command) {
-                if($command) {
-                    yield $command;
+        while (($line = fread($fh, $this->_chunkSize)) && !feof($fh)) {
+            foreach($tokenizer->append($line) as $token) {
+                switch($token->pattern->name) {
+                    case 'COMMENT_SINGLE':
+                    case 'COMMENT_MULTI':
+                        yield $token->content;
+                        break;
+                    default:
+                        $tokens[] = $token;
+                        if($token->pattern->name === 'DELIMITER') {
+                            yield Token::Assemble(...$tokens);
+                            $tokens = [];
+                        }
+                        break;
                 }
             }
         }
         flock($fh, LOCK_UN);
         fclose($fh);
+        if(count($tokens) > 0) {
+            yield Token::Assemble(...$tokens);
+        }
     }
 }

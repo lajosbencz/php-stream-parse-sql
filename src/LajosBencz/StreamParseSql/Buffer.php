@@ -15,7 +15,7 @@ class Buffer
 
     public function __construct()
     {
-        $this->reset();
+        $this->clear();
         $this->_tokenizer = new SqlTokenizer;
     }
 
@@ -24,7 +24,7 @@ class Buffer
         return $this->_buffer;
     }
 
-    public function reset(): void
+    public function clear(): void
     {
         $this->_buffer = '';
     }
@@ -32,26 +32,33 @@ class Buffer
     /**
      * @param string $line
      * @return string[]|Generator
+     * @throws \Throwable
      */
     public function append(string $line): Generator
     {
         $this->_tokenizer->reset();
-        while($this->_tokenizer->tokenize($line) !== false) {}
-        foreach($this->_tokenizer->tokens as $token) {
-            if(in_array($token['name'], ['COMMENT_SINGLE', 'COMMENT_MULTI'])) {
+        while ($this->_tokenizer->tokenize($line) !== null) { }
+        foreach ($this->_tokenizer->getTokens() as $token) {
+            if (in_array($token['name'], ['COMMENT_SINGLE', 'COMMENT_MULTI'])) {
                 continue;
             }
-            if($token['name'] === 'DELIMITER') {
-                $ret = trim($this->_buffer);
-                $this->reset();
-                yield $ret;
-            } else {
-                $this->_buffer.= $token['token'].' ';
+            switch($token['name']) {
+                case 'NEWLINE':
+                    $this->_buffer.= ' ';
+                    break;
+                case 'DELIMITER':
+                    $ret = trim($this->_buffer);
+                    $this->clear();
+                    yield $ret;
+                    break;
+                default:
+                    $this->_buffer .= $token['token'];
+                    break;
             }
         }
         $ret = trim($this->_buffer);
-        $this->reset();
-        if(strlen($ret) > 0) {
+        $this->clear();
+        if (strlen($ret) > 0) {
             yield $ret;
         }
     }
