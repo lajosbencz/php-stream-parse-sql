@@ -1,20 +1,43 @@
 <?php
+declare(strict_types=1);
 
 namespace LajosBencz\StreamParseSql;
 
 
 class Token
 {
-    public $pattern = null;
-    public $content = '';
-    public $offset = 0;
-    public $length = 0;
-
-    public function __construct(TokenPattern $pattern, string $content, int $offset, int $length)
+    /**
+     * Assembles a list of tokens to an SQL command
+     * @param Token ...$tokens
+     * @return string
+     */
+    public static function Assemble(Token ...$tokens): string
     {
-        $this->pattern = $pattern;
+        $sql = '';
+        foreach($tokens as $t) {
+            $sql.= $t->content;
+        }
+        $sql = preg_replace('/[\s\t]+/', ' ', $sql);
+        if(!preg_match('/;[\r\n\s]*$/', $sql)) {
+            $sql.= ';';
+        }
+        return $sql;
+    }
+
+    /** @var string */
+    public $type = '';
+
+    /** @var string */
+    public $content = '';
+
+    /**
+     * Represents a token in memory
+     * @param string $type
+     * @param string $content
+     */
+    public function __construct(string $type, string $content)
+    {
+        $this->type = $type;
         $this->content = $content;
-        $this->offset = $offset;
-        $this->length = $length;
     }
 }

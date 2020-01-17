@@ -3,8 +3,8 @@
 namespace LajosBencz\StreamParseSql\Exception;
 
 
-use LajosBencz\StreamParseSql\Exception;
 use Throwable;
+use LajosBencz\StreamParseSql\Exception;
 
 class ParseException extends Exception
 {

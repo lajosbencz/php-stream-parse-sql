@@ -23,16 +23,18 @@ class StreamParseSqlTest extends TestCase
         $parsed = '';
         $parser = new StreamParseSql($filePath);
         $this->assertEquals(realpath($filePath), $parser->getFilePath());
+        $ln = 0;
         foreacH($parser->parse() as $line) {
             $this->assertNotEmpty($line);
-            $parsed.= $line . "\r\n";
+            //$parsed.= $line . "\r\n";
+            $ln++;
         }
-        file_put_contents($filePath.'.check.sql', $parsed);
+        $this->assertEquals(40, $ln);
     }
 
     public function testIncomplete()
     {
-        $f = __DIR__ . '/../fixture/temp.sql';
+        $f = sys_get_temp_dir() . '/temp-' . uniqid() . '.sql';
         $p1 = "SELECT 'foo;";
         $p2 = "bar' FROM test LIMIT 1";
         file_put_contents($f, $p1.$p2);

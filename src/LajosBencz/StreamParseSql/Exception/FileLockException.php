@@ -4,8 +4,8 @@
 namespace LajosBencz\StreamParseSql\Exception;
 
 
-use LajosBencz\StreamParseSql\Exception;
 use Throwable;
+use LajosBencz\StreamParseSql\Exception;
 
 class FileLockException extends Exception
 {

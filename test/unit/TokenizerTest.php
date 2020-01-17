@@ -30,7 +30,7 @@ class TokenizerTest extends TestCase
             $tokens[] = $token;
         }
         $this->assertEquals(0, count($tokens));
-        foreach($t->append($p2) as $token) {
+        foreach($t->append($p2, true) as $token) {
             $tokens[] = $token;
         }
         $this->assertEquals(1, count($tokens));
@@ -43,10 +43,10 @@ class TokenizerTest extends TestCase
         $input = "-- comment!\r\nINSERT INTO tbl (foo, bar) /* comment\r\n aswell */ VALUES ('val'); UPDATE tbl SET foo='ba\'r' WHERE bar='bar';";
         $t = new Tokenizer;
         $tn = 0;
-        foreach($t->append($input) as $token) {
+        foreach($t->append($input, true) as $token) {
             $this->assertNotEmpty($token);
             $tn++;
         }
-        $this->assertEquals(6, $tn);
+        $this->assertEquals(34, $tn);
     }
 }
