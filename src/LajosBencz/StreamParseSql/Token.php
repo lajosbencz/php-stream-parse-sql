@@ -17,13 +17,4 @@ class Token
         $this->offset = $offset;
         $this->length = $length;
     }
-
-    public static function Assemble(Token ...$tokens): string
-    {
-        $sql = '';
-        foreach($tokens as $t) {
-            $sql.= $t->content;
-        }
-        return $sql;
-    }
 }

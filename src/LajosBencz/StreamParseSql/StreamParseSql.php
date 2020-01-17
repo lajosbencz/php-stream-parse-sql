@@ -18,6 +18,19 @@ class StreamParseSql
 
     protected $_chunkSize = self::DEFAULT_CHUNK_SIZE;
 
+    public static function Assemble(Token ...$tokens): string
+    {
+        $sql = '';
+        foreach($tokens as $t) {
+            $sql.= $t->content;
+        }
+        $sql = preg_replace('/[\s\t]+/', ' ', $sql);
+        if(!preg_match('/;[\r\n\s]*$/', $sql)) {
+            $sql.= ';';
+        }
+        return $sql;
+    }
+
     public function __construct(string $filePath, string $delimiter = self::DEFAULT_DELIMITER, int $chunkSize = self::DEFAULT_CHUNK_SIZE)
     {
         $this->setDelimiter($delimiter);
@@ -55,17 +68,18 @@ class StreamParseSql
         if (!flock($fh, LOCK_SH)) {
             throw new Exception\FileLockException($filePath);
         }
-        while (($line = fread($fh, $this->_chunkSize)) && !feof($fh)) {
-            foreach($tokenizer->append($line) as $token) {
+        while (!feof($fh)) {
+            $line = fread($fh, $this->_chunkSize);
+            foreach($tokenizer->append($line, feof($fh)) as $token) {
                 switch($token->pattern->name) {
                     case 'COMMENT_SINGLE':
                     case 'COMMENT_MULTI':
-                        yield $token->content;
+                    case 'NEWLINE':
                         break;
                     default:
                         $tokens[] = $token;
-                        if($token->pattern->name === 'DELIMITER') {
-                            yield Token::Assemble(...$tokens);
+                        if($token->pattern->name == 'DELIMITER') {
+                            yield self::Assemble(...$tokens);
                             $tokens = [];
                         }
                         break;
@@ -75,7 +89,7 @@ class StreamParseSql
         flock($fh, LOCK_UN);
         fclose($fh);
         if(count($tokens) > 0) {
-            yield Token::Assemble(...$tokens);
+            yield self::Assemble(...$tokens);
         }
     }
 }

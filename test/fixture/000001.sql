@@ -1,3 +1,4 @@
+-- START
 
 -- @todo tour tablarol levenni a tour_date es tour_division-be atrakott oszlopokat
 -- @todo torolni a tour referenciakat es oszlopokat ahol tour_date_id vagy tour_division_id oszlop lett hozzaadva
@@ -140,6 +141,7 @@ ALTER TABLE `tour_room_type`
 -- test for ; character inside text data
 -- ---------------------------------------------------------------------------------------------------------------------
 INSERT INTO tour_room_type (name) VALUES ('foo; bar!');
+INSERT INTO tour_room_type (name) VALUES ('baz?bax;');
 
 
 
@@ -224,3 +226,5 @@ SET `tour_division_id` = (
 );
 ALTER TABLE `tour_vehicle_seat`
     ADD FOREIGN KEY (`tour_division_id`) REFERENCES `tour_division` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- END
