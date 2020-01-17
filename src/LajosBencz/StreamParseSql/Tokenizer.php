@@ -47,10 +47,11 @@ PATTERN));
 PATTERN));
 
         $this->pushPattern(new TokenPattern('DELIMITER', '^[;]'));
+        $this->pushPattern(new TokenPattern('SEPARATOR', '^[\.]'));
         $this->pushPattern(new TokenPattern("NEWLINE", '^(\r)?\n'));
         $this->pushPattern(new TokenPattern('WHITESPACE', '^[\s]+'));
-        $this->pushPattern(new TokenPattern('PARENTHESIS', '^[\(\)]'));
-        $this->pushPattern(new TokenPattern('EXPRESSION', '^[^\s;\(\)\r\n]+'));
+        $this->pushPattern(new TokenPattern('PARENTHESIS', '^[\(\)\[\]\`]'));
+        $this->pushPattern(new TokenPattern('EXPRESSION', '^[^\s;\(\)\[\]\`\r\n]+'));
     }
 
     public function clearPatterns(): void
