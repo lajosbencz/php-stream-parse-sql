@@ -15,13 +15,28 @@ class Tokenizer
 PATTERN
         ,
         // INCOMPLETE SINGLE LINE COMMENTS
-        'COMMENT_SINGLE_' => <<<'PATTERN'
-/^\-\-\s[^\r\n]*$/
+        'COMMENT_DASH_' => <<<'PATTERN'
+/^\-(\-)?((\s[^\r\n]*))$/
+PATTERN
+        ,
+        // INCOMPLETE SINGLE LINE COMMENTS
+        'COMMENT_HASH_' => <<<'PATTERN'
+/^[#][^\r\n]*$/
+PATTERN
+        ,
+        // CONDITIONAL COMMENT
+        'COMMENT_CONDITION' => <<<'PATTERN'
+/^\/\*[\!\+][^*]*\*+(?:[^\/*][^*]*\*+)*\//
 PATTERN
         ,
         // MULTI LINE COMMENT
         'COMMENT_MULTI' => <<<'PATTERN'
-/^\/\*(\r|\n|.)*\*\//
+/^\/\*[^*]*\*+(?:[^\/*][^*]*\*+)*\//
+PATTERN
+        ,
+        // INCOMPLETE CONDITIONAL COMMENT
+        'COMMENT_CONDITION_' => <<<'PATTERN'
+/^\/\*[\!\+][^*]*$/
 PATTERN
         ,
         // INCOMPLETE MULTI LINE COMMENTS
@@ -35,7 +50,12 @@ PATTERN
 PATTERN
         ,
         // SINGLE LINE COMMENT
-        'COMMENT_SINGLE' => <<<'PATTERN'
+        'COMMENT_HASH' => <<<'PATTERN'
+/^[#](.*)(\r)?\n/
+PATTERN
+        ,
+        // SINGLE LINE COMMENT
+        'COMMENT_DASH' => <<<'PATTERN'
 /^--\s(.*)(\r)?\n/
 PATTERN
         ,
@@ -43,7 +63,7 @@ PATTERN
         // SQL COMMAND DELIMITER
         'DELIMITER' => '/^;/',
         // EXPRESSION SEPARATOR
-        'SEPARATOR' => '/^[\.]/',
+        'SEPARATOR' => '/^[\.,]/',
         // NEW LINE NIX/WIN
         'NEWLINE' => '/^(\r)?\n/',
         // WHITESPACE CHARACTERS
@@ -115,9 +135,11 @@ PATTERN
                     $token = new Token($patternType, $matchText);
                     switch ($patternType) {
                         case 'STRING_':
-                        case 'COMMENT_SINGLE_':
+                        case 'COMMENT_DASH_':
+                        case 'COMMENT_HASH_':
                         case 'COMMENT_MULTI_':
-                            $this->_buffer = $matchText;
+                        case 'COMMENT_CONDITION_':
+                            $this->_buffer = $input;
                             return;
                         default:
                             $this->_tokens[] = $token;

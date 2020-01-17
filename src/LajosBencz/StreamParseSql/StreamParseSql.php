@@ -94,7 +94,8 @@ class StreamParseSql
             $pos += min(strlen($line), $this->_chunkSize);
             foreach($tokenizer->append($line, feof($fh)) as $token) {
                 switch($token->type) {
-                    case 'COMMENT_SINGLE':
+                    case 'COMMENT_HASH':
+                    case 'COMMENT_DASH':
                     case 'COMMENT_MULTI':
                     case 'NEWLINE':
                         break;

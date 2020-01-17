@@ -44,4 +44,40 @@ class StreamParseSqlTest extends TestCase
         }
         unlink($f);
     }
+
+    public function testComments()
+    {
+        $file = __DIR__ . '/../fixture/comments.sql';
+        $t = new StreamParseSql($file);
+        $n = 0;
+        foreach($t->parse() as $sql) {
+            $n++;
+        }
+        $this->assertEquals(0, $n);
+    }
+
+    public function testConditionalComments()
+    {
+        $file = __DIR__ . '/../fixture/conditional-comments.sql';
+        $t = new StreamParseSql($file);
+        $n = 0;
+        foreach($t->parse() as $sql) {
+            $n++;
+        }
+        $this->assertGreaterThan(0, $n);
+    }
+
+    public function testLongValues()
+    {
+        $file = __DIR__ . '/../fixture/long_value.sql';
+        $file = __DIR__ . '/../../../../../git.lazos.me/travelhood/models-v1.1.x/th_backup_000008.sql';
+        $t = new StreamParseSql($file);
+        $n = 0;
+        foreach($t->parse() as $sql) {
+            $n++;
+        }
+        $this->assertGreaterThan(0, $n);
+    }
+
+
 }
