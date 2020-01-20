@@ -11,7 +11,12 @@ class Tokenizer
     protected static $PATTERNS = [
         // INCOMPLETE STRINGS
         'STRING_' => <<<'PATTERN'
-/^("|')[^"']*$/
+/^'[^'\\]*(\\.[^'\\]*)*$/
+PATTERN
+        ,
+        // INCOMPLETE STRINGS
+        'STRING2_' => <<<'PATTERN'
+/^"[^"\\]*(\\.[^"\\]*)*$/
 PATTERN
         ,
         // INCOMPLETE SINGLE LINE COMMENTS
@@ -46,7 +51,12 @@ PATTERN
         ,
         // STRING LITERAL
         'STRING' => <<<'PATTERN'
-/^("|')(\\?.)*?\1/
+/^'[^'\\]*(\\.[^'\\]*)*'/
+PATTERN
+        ,
+        // STRING2 LITERAL
+        'STRING2' => <<<'PATTERN'
+/^"[^"\\]*(\\.[^"\\]*)*"/
 PATTERN
         ,
         // SINGLE LINE COMMENT
@@ -70,8 +80,12 @@ PATTERN
         'WHITESPACE' => '/^[\s]+/',
         // GROUPING CHARACTERS
         'PARENTHESIS' => '/^[\(\)\[\]\`]/',
+
         // THE REST OF THE STRING....
-        'EXPRESSION' => '/^[^\s;\(\)\[\]\`\r\n]+/',
+        'EXPRESSION' => <<<'PATTERN'
+/^[^\s;\(\)\[\]\`\r\n'"]+/
+PATTERN
+        ,
     ];
 
     /** @var string */
@@ -79,6 +93,9 @@ PATTERN
 
     /** @var string */
     private $_buffer = '';
+
+    /** @var string */
+    private $_openToken = '';
 
     /** @var Token[] */
     private $_tokens = [];
@@ -135,13 +152,20 @@ PATTERN
                     $token = new Token($patternType, $matchText);
                     switch ($patternType) {
                         case 'STRING_':
+                        case 'STRING2_':
                         case 'COMMENT_DASH_':
                         case 'COMMENT_HASH_':
                         case 'COMMENT_MULTI_':
                         case 'COMMENT_CONDITION_':
                             $this->_buffer = $input;
-                            return;
+                            $input = '';
+                            $this->_openToken = $patternType;
+                            if($eof) {
+                                $this->_tokens[] = $token;
+                            }
+                            break;
                         default:
+                            $this->_openToken = '';
                             $this->_tokens[] = $token;
                             $this->_buffer = '';
                             if ($patternType == 'DELIMITER') {

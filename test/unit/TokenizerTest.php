@@ -47,6 +47,44 @@ class TokenizerTest extends TestCase
             $this->assertNotEmpty($token);
             $tn++;
         }
-        $this->assertEquals(34, $tn);
+        $this->assertEquals(36, $tn);
+    }
+
+    public function provideEscapedString()
+    {
+        return [
+            [
+                <<<SQL
+'Air Test
+SQL
+                ,
+                ['STRING_'],
+            ],
+            [
+                <<<SQL
+"test", '\\\\', 'Jayrow', ';;', "string";
+SQL
+                ,
+                ['STRING2', 'SEPARATOR', 'WHITESPACE', 'STRING', 'SEPARATOR', 'WHITESPACE', 'STRING', 'SEPARATOR', 'WHITESPACE', 'STRING', 'SEPARATOR', 'WHITESPACE', 'STRING2', 'DELIMITER'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideEscapedString
+     * @param string $sql
+     * @param string[] $expectedTokens
+     * @throws \LajosBencz\StreamParseSql\Exception\ParseException
+     */
+    public function testEscapedString(string $sql, array $expectedTokens)
+    {
+        $t = new Tokenizer;
+        $actualTokens = [];
+        $out = '';
+        foreach($t->append($sql, true) as $token) {
+            $actualTokens[] = $token->type;
+            $out.= $token;
+        }
+        $this->assertEquals($expectedTokens, $actualTokens);
     }
 }

@@ -1,4 +1,22 @@
 
+
+--
+-- Dumping data for table `airline`
+--
+
+LOCK TABLES `airline` WRITE;
+/*!40000 ALTER TABLE `airline` DISABLE KEYS */;
+SET autocommit=0;
+INSERT INTO `airline` VALUES (750,'ES','EuropeSky',0x00),(751,'GB','BRAZIL AIR',0x00),(752,'MR','Homer Air',0x00),(753,'-+','U.S. Air',0x00),(754,'\\\\','Jayrow',0x00),(755,';;','Wilderness Air',0x00),(756,'^^','Whitaker Air',0x00);
+/*!40000 ALTER TABLE `airline` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+
+-- Dumped table `airline` with 937 row(s)
+--
+
+
+
 LOCK TABLES `apartment_description` WRITE;
 
 /*!40000 ALTER TABLE `apartment_description`

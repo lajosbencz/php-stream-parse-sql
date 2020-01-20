@@ -70,7 +70,6 @@ class StreamParseSqlTest extends TestCase
     public function testLongValues()
     {
         $file = __DIR__ . '/../fixture/long_value.sql';
-        $file = __DIR__ . '/../../../../../git.lazos.me/travelhood/models-v1.1.x/th_backup_000008.sql';
         $t = new StreamParseSql($file);
         $n = 0;
         foreach($t->parse() as $sql) {
