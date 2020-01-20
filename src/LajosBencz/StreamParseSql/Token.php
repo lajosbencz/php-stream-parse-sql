@@ -40,4 +40,9 @@ class Token
         $this->type = $type;
         $this->content = $content;
     }
+
+    public function __toString()
+    {
+        return $this->content;
+    }
 }
